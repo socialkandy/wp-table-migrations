@@ -41,6 +41,26 @@ And use [WP Cli](https://wp-cli.org/) to run the command:
 wp tables migrate
 ```
 
+List available migrations:
+```
+wp tables list
+```
+
+Rollback migrations
+```
+wp tables migrate --rollback
+```
+
+Run a single migrations
+```
+wp tables migrate --steps=1
+```
+
+Migration scaffolding
+```
+wp tables scaffold ClassName
+```
+
 That's it! See our examples for more:
 
 ---

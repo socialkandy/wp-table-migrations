@@ -171,7 +171,6 @@ if (!class_exists('TableMigrations')) {
     }
 }
 
-
 /**
  * Load the main class.
  *
@@ -181,3 +180,43 @@ add_action('plugins_loaded', function(){
     TableMigrations::getInstance();
 
 });
+
+/**
+ * Load Factory Migrations.
+ *
+ */
+function load_factory_migrations() {
+	if ( ! defined( 'WP_CLI' ) || defined( 'WP_CLI' ) && ! WP_CLI ) {
+		return;
+	}
+
+	$elements = glob( ABSPATH . '/migrations/*.php' , 0 );
+
+	foreach ( $elements as $migration_path ) {
+		require $migration_path;
+	}
+}
+
+add_action( 'table_migrations_loaded', 'load_factory_migrations' );
+
+/**
+ * Wrapper for the switch_to_blog function that applies a blog switch based
+ * on a unique meta field saved for each site of the factory.
+ *
+ * @param string $blog_name Tag value used to search for the site.
+ *
+ * @return bool
+ */
+function collabra_switch_to_blog( $blog_name ) {
+	foreach ( get_sites() as $site ) {
+		$saved_tag = get_metadata( 'blog', $site->blog_id, 'site_tag', true );
+		if ( ! empty( $saved_tag ) ) {
+			if ( $blog_name === $saved_tag ) {
+				switch_to_blog( $site->blog_id );
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
