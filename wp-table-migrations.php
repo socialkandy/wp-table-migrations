@@ -208,15 +208,16 @@ add_action( 'table_migrations_loaded', 'load_factory_migrations' );
  * @return bool
  */
 function collabra_switch_to_blog( $blog_name ) {
-	foreach ( get_sites() as $site ) {
-		$saved_tag = get_metadata( 'blog', $site->blog_id, 'site_tag', true );
-		if ( ! empty( $saved_tag ) ) {
-			if ( $blog_name === $saved_tag ) {
-				switch_to_blog( $site->blog_id );
-				return true;
-			}
-		}
-	}
-
+    $sites = get_sites( array(
+        'meta_query' => array(
+            'meta_key'     => 'site_tag',
+            'meta_value'   => $blog_name,
+        ),
+    ) );
+    if ( 0 < count( $sites ) ) {
+        foreach ( $sites as $site ) {
+            switch_to_blog( $site->blog_id );
+        }
+    }
 	return false;
 }

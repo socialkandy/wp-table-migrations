@@ -114,7 +114,7 @@ class Migration extends StaticInstance implements MigrationContract{
 	 */
 	public function getName()
 	{
-		return sanitize_title( get_class( $this ) );
+		return get_class( $this );
 	}
 
 	/**

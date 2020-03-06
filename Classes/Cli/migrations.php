@@ -75,7 +75,7 @@
 				);
 				$raw_template = 'Migration.mustache';
 				$raw_output = self::mustache_render( $raw_template, $vars );
-				$filename = ABSPATH . '/migrations/' . time() . '_' . sanitize_title( $args[0] ) . '.php';
+				$filename = ABSPATH . '/migrations/' . time() . '_' . $args[0] . '.php';
 				$wp_filesystem->mkdir( dirname( $filename ) );
 				if ( ! $wp_filesystem->put_contents( $filename, $raw_output ) ) {
 					WP_CLI::error( "Error creating file: {$filename}" );
@@ -96,5 +96,5 @@
 	}
 
 
-	WP_CLI::add_command( 'tables', 'TableMigrations\Cli\MigrateCommands' );
+	WP_CLI::add_command( 'migration', 'TableMigrations\Cli\MigrateCommands' );
 
