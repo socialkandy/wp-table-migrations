@@ -38,7 +38,27 @@ Creating database migrations with the power of WP Table Migrations is quite easy
 
 And use [WP Cli](https://wp-cli.org/) to run the command:
 ```
-wp tables migrate
+wp migration migrate
+```
+
+List available migrations:
+```
+wp migration list
+```
+
+Rollback migrations
+```
+wp migration migrate --rollback
+```
+
+Run a single migrations
+```
+wp migration migrate --steps=1
+```
+
+Migration scaffolding
+```
+wp migration scaffold ClassName
 ```
 
 That's it! See our examples for more:

@@ -30,8 +30,6 @@ class Migration extends StaticInstance implements MigrationContract{
 	 */
 	protected $migrator;
 
-
-
 	/**
 	 * Build a migration instance
 	 *
@@ -40,7 +38,7 @@ class Migration extends StaticInstance implements MigrationContract{
 
 		$this->name = $this->getName();
 		$this->timestamp = $this->getTimestamp();
-		add_action( 'run_table_migrations', array( &$this, 'run' ) );
+		\TableMigrations\Migrations\Migrator::enqueue_migration( $this );
 	}
 
 
@@ -54,17 +52,21 @@ class Migration extends StaticInstance implements MigrationContract{
 	public function run( Migrator $migrator ){
 
 		if( !$this->ran( $migrator ) ){
-
+			if ( is_numeric( $migrator->get_steps() ) && 0 === $migrator->get_steps() ) {
+				return;
+			}
 			if( $migrator->direction == 'up' ){
-				
 				$this->up();
-				$this->save( $migrator);
+				$this->save( $migrator );
 				$this->notify();
-
 			}else{
 
 				$this->down();
+				$this->save( $migrator );
 				$this->notify( 'Migration '.$this->getName(). ' rolled back.' );
+			}
+			if ( is_numeric( $migrator->get_steps() ) ) {
+				$migrator->dec_steps();
 			}
 		}
 	}
@@ -80,7 +82,14 @@ class Migration extends StaticInstance implements MigrationContract{
 	protected function save( $migrator )
 	{
 		$data = [ 'name' => $this->name ];
-		Record::insert( 'migrations', $data );
+		if ( $migrator->direction == 'up' ) {
+			Record::insert( 'migrations', $data );
+		} else {
+			$migration = Record::find( 'migrations' )
+			->where([ 'name' => $this->getName() ])
+			->first();
+			Record::delete( 'migrations', $migration->id );
+		}
 	}
 
 	/**
@@ -103,9 +112,9 @@ class Migration extends StaticInstance implements MigrationContract{
 	 * 
 	 * @return string
 	 */
-	protected function getName()
+	public function getName()
 	{
-		return sanitize_title( get_class( $this ) );
+		return get_class( $this );
 	}
 
 	/**

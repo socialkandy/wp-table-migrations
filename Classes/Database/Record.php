@@ -147,8 +147,7 @@
 		{
 			$this->query->limit( 1 );
 			$results = $this->results();
-
-			if( sizeof( $results ) > 0 ){
+			if( ! empty( $results ) && sizeof( $results ) > 0 ){
 				$results = array_values( $results );
 				return $results[ 0 ];
 			}
