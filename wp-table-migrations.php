@@ -60,6 +60,11 @@ if (!class_exists('TableMigrations')) {
          * @return void
          */
         private function load(){
+            if ( ! defined( 'WP_CLI' ) || defined( 'WP_CLI' ) && ! WP_CLI ) {
+                return;
+            } else if ( defined( 'SITE_ID_CURRENT_SITE') && SITE_ID_CURRENT_SITE !== get_current_blog_id() ) {
+                return;
+            }
 
             //load text-domain:
             $path = dirname( plugin_basename( __FILE__ ) ).'/Languages/';
@@ -204,19 +209,20 @@ add_action( 'table_migrations_loaded', 'load_factory_migrations' );
  * on a unique meta field saved for each site of the factory.
  *
  * @param string $blog_name Tag value used to search for the site.
+ * @param function $callback Callback function to be executed after switch to blog.
  *
  * @return bool
  */
-function collabra_switch_to_blog( $blog_name ) {
+function collabra_switch_to_blog( $blog_name, $callback ) {
     $sites = get_sites( array(
-        'meta_query' => array(
-            'meta_key'     => 'site_tag',
-            'meta_value'   => $blog_name,
-        ),
+        'meta_key'     => 'site_tag',
+        'meta_value'   => $blog_name,
+        'meta_compare' => '=',
     ) );
     if ( 0 < count( $sites ) ) {
         foreach ( $sites as $site ) {
             switch_to_blog( $site->blog_id );
+            call_user_func( $callback );
         }
     }
 	return false;
