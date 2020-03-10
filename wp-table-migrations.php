@@ -62,8 +62,6 @@ if (!class_exists('TableMigrations')) {
         private function load(){
             if ( ! defined( 'WP_CLI' ) || defined( 'WP_CLI' ) && ! WP_CLI ) {
                 return;
-            } else if ( defined( 'SITE_ID_CURRENT_SITE') && SITE_ID_CURRENT_SITE !== get_current_blog_id() ) {
-                return;
             }
 
             //load text-domain:
@@ -205,25 +203,84 @@ function load_factory_migrations() {
 add_action( 'table_migrations_loaded', 'load_factory_migrations' );
 
 /**
- * Wrapper for the switch_to_blog function that applies a blog switch based
- * on a unique meta field saved for each site of the factory.
+ * Calls switch_to_blog function on sites that match the passed site tag
+ * and then applies the passed callback function on each site.
  *
  * @param string $blog_name Tag value used to search for the site.
- * @param function $callback Callback function to be executed after switch to blog.
+ * @param callback $callback Callback function to be executed after switch to blog.
  *
  * @return bool
  */
-function collabra_switch_to_blog( $blog_name, $callback ) {
-    $sites = get_sites( array(
-        'meta_key'     => 'site_tag',
-        'meta_value'   => $blog_name,
-        'meta_compare' => '=',
-    ) );
-    if ( 0 < count( $sites ) ) {
-        foreach ( $sites as $site ) {
-            switch_to_blog( $site->blog_id );
-            call_user_func( $callback );
+function collabra_apply_migrations_to_blogs( $blog_name, $callback ) {
+    foreach ( get_sites() as $site ) {
+		$tags = collabra_get_site_tag( $site->blog_id );
+		if ( ! empty( $tags ) && is_array( $tags ) ) {
+			if ( in_array( $blog_name, $tags ) ) {
+				switch_to_blog( $site->blog_id );
+				call_user_func( $callback );
+			}
+		}
+	}
+}
+
+/**
+ * Sets a new tag to a blog meta.
+ *
+ * @param int $blog_id Site identifier.
+ * @param string Tag value to add.
+ */
+function collabra_set_site_tag( $blog_id, $value ) {
+    $value = strtolower( $value );
+    $obj   = collabra_get_site_tag( $blog_id );
+    if ( is_array( $obj ) && ! in_array( $value, $obj ) ) {
+        $obj[] = $value;
+    }
+    update_site_meta( $blog_id, 'site_tag', serialize( $obj ) );
+}
+
+/**
+ * Get tags from blog meta.
+ *
+ * @param int $blog_id Site identifier.
+ */
+function collabra_get_site_tag( $blog_id ) {
+    $tags = get_site_meta( $blog_id, 'site_tag', true );
+    if ( ! empty( $tags ) ) {
+        $obj = unserialize( $tags );
+    } else {
+        $obj = array();
+    }
+    return $obj;
+}
+
+/**
+ * Remove a tag from a blog meta.
+ *
+ * @param int $blog_id Site identifier.
+ * @param string Tag value to remove.
+ */
+function collabra_remove_site_tag( $blog_id, $value ) {
+    $value = strtolower( $value );
+    $obj   = collabra_get_site_tag( $blog_id );
+    if ( in_array( $obj, $value ) ) {
+        if ( false !== ( $key = array_search( $value, $obj ) ) ) {
+            unset( $obj[$key] );
         }
     }
-	return false;
+    update_site_meta( $blog_id, 'site_tag', serialize( $obj ) );
 }
+
+/**
+ * Add site domain as first site tag.
+ *
+ * @param $site
+ *
+ * @return void
+ */
+function collabra_insert_site_new_tag( $site ) {
+    if ( ! empty( $site->domain ) ) {
+        collabra_set_site_tag( $site->blog_id, $site->domain );
+    }
+}
+
+add_action( 'wp_insert_site', 'collabra_insert_site_new_tag' );

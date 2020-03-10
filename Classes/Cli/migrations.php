@@ -18,6 +18,9 @@
 		 * @return WP_CLI::success message
 		 */
     	function migrate( $args, $assoc_args ){
+			if ( $this->has_url_param() ) {
+				return;
+			}
 			global $wp_filter;
     		$migrator = new Migrator( );
 
@@ -44,6 +47,9 @@
 		 * @return WP_CLI::success message
 		 */
     	function list( $args, $assoc_args ){
+			if ( $this->has_url_param() ) {
+				return;
+			}
 			$migrator = new Migrator( );
 			$items    = array();
 			foreach( $migrator->list() as $key=>$value ) {
@@ -65,6 +71,9 @@
 		 */
     	function scaffold( $args, $assoc_args ){
 			global $wp_filesystem;
+			if ( $this->has_url_param() ) {
+				return;
+			}
 			WP_Filesystem();
 			if ( ! isset( $args[0] ) ) {
 				WP_CLI::error( "Missing ClassName" );
@@ -92,6 +101,17 @@
 		 */
 		private static function mustache_render( $template, $data = array() ) {
 			return Utils\mustache_render( dirname( dirname( __FILE__ ) ) . "/Templates/{$template}", $data );
+		}
+
+		/**
+		 * Checks if --url param is set.
+		 */
+		private function has_url_param() {
+			if ( isset( $_SERVER['argv'] ) && 0 < count( array_filter( $_SERVER['argv'], function( $check ) { return 0 === strpos( $check, '--url' ); } ) ) ) {
+				WP_CLI::error( "Migrations was called with --url argument. Migrations should only run on base site." );
+				return true;
+			}
+			return false;
 		}
 	}
 
